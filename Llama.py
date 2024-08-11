@@ -66,3 +66,23 @@ MASTER_CONFIG.update({
     'batch_size':8,
     'context_window':16
 })
+
+xs,ys=get_batches(dataset,'train',MASTER_CONFIG['batch_size'],MASTER_CONFIG['context_window'])
+
+print([(decode(xs[i].tolist()), decode(ys[i].tolist())) for i in range(len(xs))])
+
+
+@torch.no_grad()
+
+def evaluate_loss(model,config=MASTER_CONFIG):
+    out={}
+    model.eval()
+    for split in ["train","val"]:
+        losses=[]
+        for _ in range(10):
+            xb,yb=get_batches(dataset,split,config['batch_size'],config['context_window'])
+            _,loss=model(xb,yb)
+            losses.append(loss.item())
+        out[split]=np.mean(losses)
+    model.train()
+    return out
