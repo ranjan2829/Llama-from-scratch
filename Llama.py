@@ -58,7 +58,7 @@ def get_batches(data,split,batch_size,context_window,config=MASTER_CONFIG):
     ix=torch.randint(0,batch_data.size(0)-context_window-1,(batch_size,))
     x=torch.stack([batch_data[i:i+context_window] for i in ix ]).long()
 
-    y=torch.stack([batch_data[i+1:i+context_window] for i in ix]).long()
+    y=torch.stack([batch_data[i+1:i+context_window+1] for i in ix]).long()
     return x,y
 
 
@@ -93,15 +93,16 @@ class SimpleBrokenModel(nn.Module):
 
         self.embedding=nn.Embedding(config['vocab_size'],config['d_model'])
         self.linear=nn.Sequential(
-            nn.Linear(config['vocab_Size'],config['d_model'])
+            nn.Linear(config['d_model'],config['d_model']),
             nn.ReLU(),
             nn.Linear(config['d_model'],config['vocab_size']),
 
 
         )
         print("model params=====> ",sum([m.numel() for m in self.parameters()]))
-    def Forward(self,idx,targets=None):
+    def forward(self,idx,targets=None):
         x=self.embedding(idx)
+        x=x.view(-1,self.config['d_model'])
         a=self.linear(x)
 
         logits=F.softmax(a,dim=-1)
@@ -119,3 +120,47 @@ model=SimpleBrokenModel(MASTER_CONFIG)
 
 xs,ys=get_batches(dataset,'train',MASTER_CONFIG['batch_size'],MASTER_CONFIG['context_window'])
 logits,loss=model(xs,ys)
+
+
+
+MASTER_CONFIG.update({
+    'epochs':1000,
+    'log_interval':10,
+    'batch_size':32,
+})
+
+model=SimpleBrokenModel(MASTER_CONFIG)
+
+optimizer=torch.optim.Adam(
+    model.parameters(),
+)
+
+def train(model,optimizer,scheduler=None,config=MASTER_CONFIG,print_logs=False):
+    losses=[]
+    start_time=time.time()
+    for epoch in range(config['epochs']):
+        optimizer.zero_grad()
+
+        xs,ys=get_batches(dataset,'train',config['batch_size'],config['context_window'])
+        logits,loss=model(xs,targets=ys)
+        loss.backward()
+
+        optimizer.step()
+
+        if scheduler:
+            scheduler.step()
+        if epoch % config['log_interval']==0:
+            batch_time=time.time()-start_time
+
+            x=evaluate_loss(model)
+            losses+=[x]
+            if print_logs:
+                print(f"Epoch {epoch } | val loss {x['val']:.3f} | Time {batch_time:.3f} |ETA in seconds{batch_time*(config['epochs']-epoch)/config['log_interval'] :.3f}")
+                start_time=time.time()
+
+                if scheduler:
+                    print("lr :",scheduler.get_lr())
+        print("validation loss: ",losses[-1]['val'])
+        return pd.DataFrame(losses).plot()
+
+train(model,optimizer)
