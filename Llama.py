@@ -86,3 +86,36 @@ def evaluate_loss(model,config=MASTER_CONFIG):
         out[split]=np.mean(losses)
     model.train()
     return out
+class SimpleBrokenModel(nn.Module):
+    def __init__(self,config=MASTER_CONFIG):
+        super().__init__()
+        self.config=config
+
+        self.embedding=nn.Embedding(config['vocab_size'],config['d_model'])
+        self.linear=nn.Sequential(
+            nn.Linear(config['vocab_Size'],config['d_model'])
+            nn.ReLU(),
+            nn.Linear(config['d_model'],config['vocab_size']),
+
+
+        )
+        print("model params=====> ",sum([m.numel() for m in self.parameters()]))
+    def Forward(self,idx,targets=None):
+        x=self.embedding(idx)
+        a=self.linear(x)
+
+        logits=F.softmax(a,dim=-1)
+
+        if targets is not None:
+            loss=F.cross_entropy(logits.view(-1,self.config['vocab_size']),targets.view(-1))
+            return logits,loss
+        else:
+            return logits
+MASTER_CONFIG.update({
+    'd_model':128,
+})
+
+model=SimpleBrokenModel(MASTER_CONFIG)
+
+xs,ys=get_batches(dataset,'train',MASTER_CONFIG['batch_size'],MASTER_CONFIG['context_window'])
+logits,loss=model(xs,ys)
