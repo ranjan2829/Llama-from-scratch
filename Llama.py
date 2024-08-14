@@ -164,4 +164,22 @@ def train(model,optimizer,scheduler=None,config=MASTER_CONFIG,print_logs=True):
     pd.DataFrame(losses).plot()
     plt.show()
 
+
+class Simple(nn.Module):
+    def __init__(self,config):
+        super().__init__()
+        self.config=config
+
+        self.embedding=nn.Embedding(config['vocab_size'],config['d_model'])
+        self.linear=nn.Sequential(
+            nn.Linear(config['d_model'],config['d_model']),
+            nn.ReLU(),
+            nn.Linear(config['d_model'],config['vocab_size'])
+
+        )
+        print(f"model params: ",sum([m.numel() for m in self.parameters()]))
+
+    def forward(self,idx,target=None):
+
+
 train(model,optimizer)
