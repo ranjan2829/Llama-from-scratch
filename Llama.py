@@ -102,7 +102,7 @@ class SimpleBrokenModel(nn.Module):
         print("model params=====> ",sum([m.numel() for m in self.parameters()]))
     def forward(self,idx,targets=None):
         x=self.embedding(idx)
-        x=x.view(-1,self.config['d_model'])
+        #x=x.view(-1,self.config['d_model'])
         a=self.linear(x)
 
         logits=F.softmax(a,dim=-1)
@@ -161,6 +161,7 @@ def train(model,optimizer,scheduler=None,config=MASTER_CONFIG,print_logs=True):
                 if scheduler:
                     print("lr :",scheduler.get_lr())
         print("validation loss: ",losses[-1]['val'])
-        return pd.DataFrame(losses).plot()
+    pd.DataFrame(losses).plot()
+    plt.show()
 
 train(model,optimizer)
