@@ -179,7 +179,28 @@ class Simple(nn.Module):
         )
         print(f"model params: ",sum([m.numel() for m in self.parameters()]))
 
-    def forward(self,idx,target=None):
+    def forward(self,idx,targets=None):
+        x=self.embedding(idx)
+        logits=self.linear(x)
+
+        if targets is not None:
+            loss=F.cross_entropy(logits.view(-1,self.config['vocab_size']),targets.view(-1))
+            return logits,loss
+        else:
+            return logits
+
+model2=Simple(MASTER_CONFIG)
+xs,ys=get_batches(dataset,'train',MASTER_CONFIG['batch_size'],MASTER_CONFIG['context_window'])
+logits,loss=model2(xs,ys)
+optimizer=torch.optim.Adam(model.parameters())
 
 
-train(model,optimizer)
+
+
+
+#train(model,optimizer)
+
+
+
+
+train(model2,optimizer)
