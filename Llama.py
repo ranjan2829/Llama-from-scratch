@@ -155,7 +155,7 @@ def train(model,optimizer,scheduler=None,config=MASTER_CONFIG,print_logs=True):
             x=evaluate_loss(model)
             losses+=[x]
             if print_logs:
-                print(f"Epoch {epoch } | val loss {x['val']:.3f} | Time {batch_time:.3f} |ETA in seconds{batch_time*(config['epochs']-epoch)/config['log_interval'] :.3f}")
+                print(f"Epoch {epoch } | val loss {x['val']:.3f} | Time {batch_time:.3f} | ETA in seconds{batch_time*(config['epochs']-epoch)/config['log_interval'] :.3f}")
                 start_time=time.time()
 
                 if scheduler:
